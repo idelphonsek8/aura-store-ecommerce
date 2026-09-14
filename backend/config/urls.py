@@ -1,3 +1,4 @@
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -8,8 +9,12 @@ from orders.urls import customer_urlpatterns as orders_customer_urls, admin_urlp
 from accounts.urls import admin_urlpatterns as accounts_admin_urls
 from accounts.views import CustomerProfileView
 
+def trigger_error(request):
+    division_by_zero = 1 / 0
+
 urlpatterns = [
     path("django-admin/", admin.site.urls),
+    path("sentry-debug/", trigger_error),
 
     # Public
     path("api/", include("catalog.urls")),
@@ -24,6 +29,7 @@ urlpatterns = [
     path("api/admin/", include(catalog_admin_urls)),
     path("api/admin/", include("adminpanel.urls")),
     path("api/admin/", include(accounts_admin_urls)),
+    
 ]
 
 if settings.DEBUG:
