@@ -9,12 +9,10 @@ from orders.urls import customer_urlpatterns as orders_customer_urls, admin_urlp
 from accounts.urls import admin_urlpatterns as accounts_admin_urls
 from accounts.views import CustomerProfileView
 
-def trigger_error(request):
-    division_by_zero = 1 / 0
 
 urlpatterns = [
     path("django-admin/", admin.site.urls),
-    path("sentry-debug/", trigger_error),
+    
 
     # Public
     path("api/", include("catalog.urls")),
