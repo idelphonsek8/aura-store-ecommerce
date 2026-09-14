@@ -8,7 +8,7 @@ User = get_user_model()
 class UserPublicSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name", "email", "phone", "address", "role", "created_at"]
+        fields = ["id", "first_name", "last_name", "email", "phone", "address", "role", "is_active", "created_at"]
         read_only_fields = ["id", "role", "created_at"]
 
 
@@ -35,6 +35,29 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop("password_confirm")
         password = validated_data.pop("password")
         user = User(role=User.Role.CLIENT, **validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+
+class ManagerCreateSerializer(serializers.ModelSerializer):
+    """Used by an admin to create a new Manager (Gestionnaire) account."""
+
+    password = serializers.CharField(write_only=True, validators=[validate_password])
+
+    class Meta:
+        model = User
+        fields = ["id", "first_name", "last_name", "email", "phone", "password"]
+
+    def validate_email(self, value):
+        value = value.lower().strip()
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("Un compte existe déjà avec cette adresse email.")
+        return value
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        user = User(role=User.Role.MANAGER, is_staff=True, **validated_data)
         user.set_password(password)
         user.save()
         return user

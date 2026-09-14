@@ -1,19 +1,28 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, ShoppingBag, Users, Package, Tag, Settings, LogOut, Menu, X, ChevronsLeft, ChevronsRight,
+  LayoutDashboard, ShoppingBag, Users, Package, Tag, UserCog, ScrollText, Settings,
+  LogOut, Menu, ChevronsLeft, ChevronsRight,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
-const links = [
+const ADMIN_ONLY_LINKS = [
   { to: "/admin", label: "Tableau de bord", icon: LayoutDashboard, end: true },
   { to: "/admin/commandes", label: "Commandes", icon: ShoppingBag },
   { to: "/admin/clients", label: "Clients", icon: Users },
   { to: "/admin/produits", label: "Produits", icon: Package },
   { to: "/admin/categories", label: "Catégories", icon: Tag },
+  { to: "/admin/gestionnaires", label: "Gestionnaires", icon: UserCog },
+  { to: "/admin/journal", label: "Journal", icon: ScrollText },
+  { to: "/admin/parametres", label: "Paramètres", icon: Settings },
 ];
 
-function SidebarContent({ collapsed, onNavigate }) {
+const MANAGER_LINKS = [
+  { to: "/admin/commandes", label: "Commandes", icon: ShoppingBag, end: true },
+  { to: "/admin/parametres", label: "Paramètres", icon: Settings },
+];
+
+function SidebarContent({ collapsed, onNavigate, links }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -24,7 +33,7 @@ function SidebarContent({ collapsed, onNavigate }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-5 py-6 border-b border-border-strong flex items-center gap-2">
+      <div className="px-5 py-6 border-b border-white/10 flex items-center gap-2">
         <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-display font-bold text-ink">A</div>
         {!collapsed && <span className="font-display font-bold text-white">Aura Admin</span>}
       </div>
@@ -47,7 +56,14 @@ function SidebarContent({ collapsed, onNavigate }) {
         ))}
       </nav>
       <div className="px-3 py-4 border-t border-white/10">
-        {!collapsed && <p className="px-3 text-xs text-white/50 mb-2 truncate">{user?.email}</p>}
+        {!collapsed && (
+          <div className="px-3 mb-2">
+            <p className="text-xs text-white/50 truncate">{user?.email}</p>
+            <p className="text-[10px] uppercase tracking-wide text-white/30">
+              {user?.role === "ADMIN" ? "Administrateur" : "Gestionnaire"}
+            </p>
+          </div>
+        )}
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-white/80 hover:bg-white/10"
@@ -65,19 +81,19 @@ export default function AdminLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { user } = useAuth();
 
+  const links = user?.role === "ADMIN" ? ADMIN_ONLY_LINKS : MANAGER_LINKS;
+
   return (
     <div className="min-h-screen flex bg-canvas">
-      <aside
-        className={`hidden lg:flex flex-col bg-ink shrink-0 transition-all ${collapsed ? "w-20" : "w-64"}`}
-      >
-        <SidebarContent collapsed={collapsed} />
+      <aside className={`hidden lg:flex flex-col bg-ink shrink-0 transition-all ${collapsed ? "w-20" : "w-64"}`}>
+        <SidebarContent collapsed={collapsed} links={links} />
       </aside>
 
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-ink/40" onClick={() => setDrawerOpen(false)} />
           <div className="absolute left-0 top-0 bottom-0 w-72 bg-ink shadow-level3">
-            <SidebarContent onNavigate={() => setDrawerOpen(false)} />
+            <SidebarContent onNavigate={() => setDrawerOpen(false)} links={links} />
           </div>
         </div>
       )}

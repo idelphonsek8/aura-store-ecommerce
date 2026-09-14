@@ -22,7 +22,7 @@ function SidebarContent({ onNavigate }) {
   return (
     <div className="flex flex-col h-full">
       <div className="px-5 py-6 border-b border-border">
-        <Link to="/" className="font-display font-bold text-lg text-ink">Aura Store</Link>
+            <Link to="/"><img src="/logo.png" alt="Aura Store" className="h-8 w-auto" /></Link>
         <p className="text-xs text-ink-tertiary mt-1">Espace client</p>
       </div>
       <nav className="flex-1 px-3 py-4 flex flex-col gap-1">

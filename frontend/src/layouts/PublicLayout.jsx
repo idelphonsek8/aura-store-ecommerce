@@ -21,8 +21,8 @@ export default function PublicLayout() {
     <div className="min-h-screen flex flex-col bg-canvas">
       <header className="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-border">
         <div className="max-w-container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="font-display font-bold text-lg tracking-tight text-ink">
-            Aura Store
+          <Link to="/" className="flex items-center gap-2">
+              <img src="/logo.png" alt="Aura Store" className="h-14 w-auto -my-2" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -111,7 +111,7 @@ export default function PublicLayout() {
       <footer className="border-t border-border bg-surface mt-16">
         <div className="max-w-container mx-auto px-4 md:px-6 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <p className="font-display font-bold text-lg mb-2">Aura Store</p>
+                <img src="/logo.png" alt="Aura Store" className="h-16 w-auto mb-2" />
             <p className="text-sm text-ink-secondary">
               Une sélection minimaliste et élégante pour votre quotidien.
             </p>

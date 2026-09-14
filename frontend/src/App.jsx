@@ -8,6 +8,7 @@ import CustomerLayout from "./layouts/CustomerLayout";
 import AdminLayout from "./layouts/AdminLayout";
 import CustomerRoute from "./routes/CustomerRoute";
 import AdminRoute from "./routes/AdminRoute";
+import AdminOnlyRoute from "./routes/AdminOnlyRoute";
 
 import Home from "./pages/public/Home";
 import Catalog from "./pages/public/Catalog";
@@ -36,6 +37,9 @@ import AdminCustomerDetail from "./pages/admin/CustomerDetail";
 import AdminProducts from "./pages/admin/Products";
 import ProductForm from "./pages/admin/ProductForm";
 import AdminCategories from "./pages/admin/Categories";
+import AdminManagers from "./pages/admin/Managers";
+import AdminActivityLog from "./pages/admin/ActivityLog";
+import AdminSettings from "./pages/admin/Settings";
 
 export default function App() {
   return (
@@ -75,7 +79,7 @@ export default function App() {
                 <Route path="securite" element={<CustomerSecurity />} />
               </Route>
 
-              {/* Admin */}
+              {/* Admin & Manager */}
               <Route path="/admin/connexion" element={<AdminLogin />} />
               <Route
                 path="/admin"
@@ -85,15 +89,18 @@ export default function App() {
                   </AdminRoute>
                 }
               >
-                <Route index element={<AdminDashboard />} />
+                <Route index element={<AdminOnlyRoute><AdminDashboard /></AdminOnlyRoute>} />
                 <Route path="commandes" element={<AdminOrders />} />
                 <Route path="commandes/:id" element={<AdminOrderDetail />} />
-                <Route path="clients" element={<AdminCustomers />} />
-                <Route path="clients/:id" element={<AdminCustomerDetail />} />
-                <Route path="produits" element={<AdminProducts />} />
-                <Route path="produits/nouveau" element={<ProductForm />} />
-                <Route path="produits/:id/modifier" element={<ProductForm />} />
-                <Route path="categories" element={<AdminCategories />} />
+                <Route path="clients" element={<AdminOnlyRoute><AdminCustomers /></AdminOnlyRoute>} />
+                <Route path="clients/:id" element={<AdminOnlyRoute><AdminCustomerDetail /></AdminOnlyRoute>} />
+                <Route path="produits" element={<AdminOnlyRoute><AdminProducts /></AdminOnlyRoute>} />
+                <Route path="produits/nouveau" element={<AdminOnlyRoute><ProductForm /></AdminOnlyRoute>} />
+                <Route path="produits/:id/modifier" element={<AdminOnlyRoute><ProductForm /></AdminOnlyRoute>} />
+                <Route path="categories" element={<AdminOnlyRoute><AdminCategories /></AdminOnlyRoute>} />
+                <Route path="gestionnaires" element={<AdminOnlyRoute><AdminManagers /></AdminOnlyRoute>} />
+                <Route path="journal" element={<AdminOnlyRoute><AdminActivityLog /></AdminOnlyRoute>} />
+                <Route path="parametres" element={<AdminSettings />} />
               </Route>
             </Routes>
           </CartProvider>

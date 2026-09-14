@@ -5,6 +5,7 @@ from django.urls import path, include
 
 from catalog.urls import admin_urlpatterns as catalog_admin_urls
 from orders.urls import customer_urlpatterns as orders_customer_urls, admin_urlpatterns as orders_admin_urls
+from accounts.urls import admin_urlpatterns as accounts_admin_urls
 from accounts.views import CustomerProfileView
 
 urlpatterns = [
@@ -18,10 +19,11 @@ urlpatterns = [
     path("api/customer/profile/", CustomerProfileView.as_view()),
     path("api/customer/", include(orders_customer_urls)),
 
-    # Administration (all views individually enforce IsAdminRole)
+    # Administration (all views individually enforce IsAdminRole or IsAdminOrManager)
     path("api/admin/", include(orders_admin_urls)),
     path("api/admin/", include(catalog_admin_urls)),
     path("api/admin/", include("adminpanel.urls")),
+    path("api/admin/", include(accounts_admin_urls)),
 ]
 
 if settings.DEBUG:

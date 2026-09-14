@@ -34,6 +34,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
         CLIENT = "CLIENT", "Client"
+        MANAGER = "MANAGER", "Gestionnaire"
         ADMIN = "ADMIN", "Administrateur"
 
     email = models.EmailField(unique=True)
@@ -65,3 +66,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_admin(self):
         return self.role == self.Role.ADMIN
+
+    @property
+    def is_manager(self):
+        return self.role == self.Role.MANAGER

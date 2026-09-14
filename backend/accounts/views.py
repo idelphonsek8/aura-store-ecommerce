@@ -7,7 +7,11 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 
-from .serializers import RegisterSerializer, UserPublicSerializer, ChangePasswordSerializer
+from adminpanel.utils import log_activity
+from accounts.permissions import IsAdminRole
+from .serializers import (
+    RegisterSerializer, UserPublicSerializer, ChangePasswordSerializer, ManagerCreateSerializer,
+)
 
 User = get_user_model()
 
@@ -33,9 +37,16 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 class LoginView(TokenObtainPairView):
     serializer_class = EmailTokenObtainPairSerializer
 
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            user = User.objects.filter(email__iexact=request.data.get("email")).first()
+            log_activity(user, "LOGIN", "Connexion client", request)
+        return response
+
 
 class AdminLoginView(TokenObtainPairView):
-    """Same credentials flow, but refuses any account that is not ADMIN.
+    """Same credentials flow, but refuses any account that is not ADMIN or MANAGER.
     This is enforced server-side regardless of what the frontend sends."""
 
     serializer_class = EmailTokenObtainPairSerializer
@@ -44,11 +55,13 @@ class AdminLoginView(TokenObtainPairView):
         response = super().post(request, *args, **kwargs)
         if response.status_code == 200:
             user_data = response.data.get("user", {})
-            if user_data.get("role") != "ADMIN":
+            if user_data.get("role") not in ("ADMIN", "MANAGER"):
                 return Response(
                     {"detail": "Identifiant ou mot de passe incorrect."},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
+            user = User.objects.filter(email__iexact=request.data.get("email")).first()
+            log_activity(user, "LOGIN", f"Connexion back-office ({user_data.get('role')})", request)
         return response
 
 
@@ -61,6 +74,7 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        log_activity(user, "REGISTER", "Inscription d'un nouveau client", request)
         refresh = RefreshToken.for_user(user)
         return Response(
             {
@@ -76,6 +90,7 @@ class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        log_activity(request.user, "LOGOUT", "Déconnexion", request)
         try:
             refresh_token = request.data.get("refresh")
             if refresh_token:
@@ -106,6 +121,7 @@ class ChangePasswordView(APIView):
         serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        log_activity(request.user, "PASSWORD_CHANGED", "Changement de mot de passe", request)
         return Response({"detail": "Mot de passe modifié avec succès."})
 
 
@@ -119,4 +135,42 @@ class CustomerProfileView(APIView):
         serializer = UserPublicSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        log_activity(request.user, "PROFILE_UPDATED", "Modification du profil", request)
         return Response(serializer.data)
+
+
+# ---------- Manager accounts (admin only) ----------
+
+class AdminManagerListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAdminRole]
+
+    def get_queryset(self):
+        return User.objects.filter(role=User.Role.MANAGER).order_by("-created_at")
+
+    def get_serializer_class(self):
+        return ManagerCreateSerializer if self.request.method == "POST" else UserPublicSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = ManagerCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        manager = serializer.save()
+        log_activity(
+            request.user, "MANAGER_CREATED", f"Gestionnaire créé : {manager.email}", request
+        )
+        return Response(UserPublicSerializer(manager).data, status=status.HTTP_201_CREATED)
+
+
+class AdminManagerDetailView(APIView):
+    permission_classes = [IsAdminRole]
+
+    def patch(self, request, pk):
+        manager = User.objects.get(pk=pk, role=User.Role.MANAGER)
+        is_active = request.data.get("is_active")
+        if is_active is not None:
+            manager.is_active = is_active
+            manager.save(update_fields=["is_active"])
+            log_activity(
+                request.user, "MANAGER_UPDATED",
+                f"Gestionnaire {'activé' if is_active else 'désactivé'} : {manager.email}", request
+            )
+        return Response(UserPublicSerializer(manager).data)

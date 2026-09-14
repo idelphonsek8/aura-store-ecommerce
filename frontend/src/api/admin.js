@@ -68,3 +68,23 @@ export async function updateAdminCategory(id, payload) {
   const { data } = await client.patch(`/admin/categories/${id}/`, payload);
   return data;
 }
+
+export async function fetchManagers(params = {}) {
+  const { data } = await client.get("/admin/managers/", { params });
+  return data;
+}
+
+export async function createManager(payload) {
+  const { data } = await client.post("/admin/managers/", payload);
+  return data;
+}
+
+export async function updateManager(id, payload) {
+  const { data } = await client.patch(`/admin/managers/${id}/`, payload);
+  return data;
+}
+
+export async function fetchActivityLog(params = {}) {
+  const { data } = await client.get("/admin/activity-log/", { params });
+  return data;
+}

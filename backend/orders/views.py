@@ -5,7 +5,8 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.permissions import IsAdminRole, IsClientRole
+from accounts.permissions import IsAdminRole, IsClientRole, IsAdminOrManager
+from adminpanel.utils import log_activity
 from .models import Order
 from .serializers import (
     OrderCreateSerializer, OrderListSerializer, OrderDetailSerializer, OrderStatusUpdateSerializer,
@@ -49,6 +50,9 @@ class CustomerOrderListCreateView(generics.ListCreateAPIView):
         serializer = OrderCreateSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
+        log_activity(
+            request.user, "ORDER_CREATED", f"Commande {order.order_number} créée", request
+        )
         return Response(OrderDetailSerializer(order).data, status=status.HTTP_201_CREATED)
 
 
@@ -62,11 +66,11 @@ class CustomerOrderDetailView(generics.RetrieveAPIView):
         return Order.objects.filter(customer=self.request.user)
 
 
-# ---------- Admin ----------
+# ---------- Admin & Manager ----------
 
 class AdminOrderListView(generics.ListAPIView):
     serializer_class = OrderListSerializer
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsAdminOrManager]
     pagination_class = OrderPagination
 
     def get_queryset(self):
@@ -95,15 +99,19 @@ class AdminOrderListView(generics.ListAPIView):
 class AdminOrderDetailView(generics.RetrieveAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderDetailSerializer
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsAdminOrManager]
 
 
 class AdminOrderStatusUpdateView(APIView):
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsAdminOrManager]
 
     def patch(self, request, pk):
         order = get_object_or_404(Order, pk=pk)
         serializer = OrderStatusUpdateSerializer(data=request.data, context={"order": order, "request": request})
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
+        log_activity(
+            request.user, "ORDER_STATUS_CHANGED",
+            f"Commande {order.order_number} → {order.status}", request
+        )
         return Response(OrderDetailSerializer(order).data)

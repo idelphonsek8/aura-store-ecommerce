@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Sum, Q
 from django.utils import timezone
 from rest_framework import generics
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -11,6 +12,7 @@ from accounts.serializers import UserPublicSerializer
 from catalog.models import Product
 from orders.models import Order
 from orders.serializers import OrderListSerializer
+from .models import ActivityLog
 
 User = get_user_model()
 
@@ -104,3 +106,58 @@ class AdminCustomerDetailView(APIView):
             },
             "orders": OrderListSerializer(orders, many=True).data,
         })
+
+
+# ---------- Activity log (Journal) ----------
+
+class ActivityLogPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
+class AdminActivityLogView(generics.ListAPIView):
+    permission_classes = [IsAdminRole]
+    pagination_class = ActivityLogPagination
+
+    def get_queryset(self):
+        qs = ActivityLog.objects.select_related("user").all()
+        params = self.request.query_params
+        action = params.get("action")
+        if action:
+            qs = qs.filter(action=action)
+        role = params.get("role")
+        if role:
+            qs = qs.filter(role=role)
+        search = params.get("search")
+        if search:
+            qs = qs.filter(
+                Q(description__icontains=search) | Q(user__email__icontains=search)
+            )
+        date_from = params.get("date_from")
+        if date_from:
+            qs = qs.filter(created_at__date__gte=date_from)
+        date_to = params.get("date_to")
+        if date_to:
+            qs = qs.filter(created_at__date__lte=date_to)
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        qs = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(qs)
+        target = page if page is not None else qs
+        data = [
+            {
+                "id": log.id,
+                "user_email": log.user.email if log.user else "Utilisateur supprimé",
+                "role": log.role,
+                "action": log.action,
+                "description": log.description,
+                "ip_address": log.ip_address,
+                "created_at": log.created_at,
+            }
+            for log in target
+        ]
+        if page is not None:
+            return self.get_paginated_response(data)
+        return Response(data)
