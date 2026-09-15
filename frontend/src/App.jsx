@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { registerErrorNotifier } from "./api/client";
+import { useToast } from "./context/ToastContext";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -41,10 +44,19 @@ import AdminManagers from "./pages/admin/Managers";
 import AdminActivityLog from "./pages/admin/ActivityLog";
 import AdminSettings from "./pages/admin/Settings";
 
+function ErrorNotifierBridge() {
+  const { showToast } = useToast();
+  useEffect(() => {
+    registerErrorNotifier(showToast);
+  }, [showToast]);
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <ToastProvider>
+        <ErrorNotifierBridge />
         <AuthProvider>
           <CartProvider>
             <Routes>

@@ -12,6 +12,13 @@ function getTokens() {
   }
 }
 
+let notifyError = null;
+export function registerErrorNotifier(fn) {
+  notifyError = fn;
+}
+
+let lastNotifyAt = 0;
+
 export function setTokens(tokens) {
   if (tokens) localStorage.setItem("aura_tokens", JSON.stringify(tokens));
   else localStorage.removeItem("aura_tokens");
@@ -67,6 +74,18 @@ client.interceptors.response.use(
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
+      }
+    }
+        const now = Date.now();
+    if (!error.response) {
+      if (now - lastNotifyAt > 4000) {
+        notifyError?.("Impossible de contacter le serveur. Vérifiez votre connexion.", "error");
+        lastNotifyAt = now;
+      }
+    } else if (error.response.status >= 500) {
+      if (now - lastNotifyAt > 4000) {
+        notifyError?.("Une erreur est survenue côté serveur. Réessayez dans quelques instants.", "error");
+        lastNotifyAt = now;
       }
     }
     return Promise.reject(error);
